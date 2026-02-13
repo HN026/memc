@@ -96,7 +96,7 @@ memc --all [options]
 ./build/memc $$ --smaps | jq '.regions[] | select(.type == "heap")'
 ```
 
-## Output Format
+## Output Formatd
 
 All output goes to **stdout** (status messages go to stderr), or to a file with `--output`.
 
