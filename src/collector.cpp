@@ -1,8 +1,7 @@
+#include <chrono>
 #include <memc/collector.h>
 #include <memc/maps_parser.h>
 #include <memc/smaps_parser.h>
-
-#include <chrono>
 
 namespace memc {
 
@@ -13,12 +12,15 @@ namespace memc {
  * @param config Configuration options for the collector.
  */
 DataCollector::DataCollector(pid_t pid, Config config)
-    : pid_(pid), config_(std::move(config)) {}
+    : pid_(pid)
+    , config_(std::move(config)) {}
 
 /**
  * @brief Destructor. Ensures sampling is stopped before destruction.
  */
-DataCollector::~DataCollector() { stop_sampling(); }
+DataCollector::~DataCollector() {
+    stop_sampling();
+}
 
 /**
  * @brief Takes a single snapshot of the process memory.
@@ -30,26 +32,25 @@ DataCollector::~DataCollector() { stop_sampling(); }
  * std::nullopt if the process could not be accessed.
  */
 std::optional<ProcessSnapshot> DataCollector::collect_once() {
-  ProcessSnapshot snapshot;
-  snapshot.pid = pid_;
+    ProcessSnapshot snapshot;
+    snapshot.pid = pid_;
 
-  auto now = std::chrono::system_clock::now();
-  snapshot.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                              now.time_since_epoch())
-                              .count();
+    auto now = std::chrono::system_clock::now();
+    snapshot.timestamp_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
-  auto maps_result = MapsParser::parse(pid_);
-  if (!maps_result) {
-    return std::nullopt;
-  }
+    auto maps_result = MapsParser::parse(pid_);
+    if (!maps_result) {
+        return std::nullopt;
+    }
 
-  snapshot.regions = std::move(*maps_result);
+    snapshot.regions = std::move(*maps_result);
 
-  if (config_.use_smaps) {
-    SmapsParser::enrich(pid_, snapshot.regions);
-  }
+    if (config_.use_smaps) {
+        SmapsParser::enrich(pid_, snapshot.regions);
+    }
 
-  return snapshot;
+    return snapshot;
 }
 
 /**
@@ -61,13 +62,13 @@ std::optional<ProcessSnapshot> DataCollector::collect_once() {
  * @param snapshot The snapshot to serialize.
  * @return std::string The JSON string representation.
  */
-std::string DataCollector::to_json(const ProcessSnapshot &snapshot) const {
-  nlohmann::ordered_json j;
-  memc::to_json(j, snapshot);
-  if (config_.pretty_json) {
-    return j.dump(2);
-  }
-  return j.dump();
+std::string DataCollector::to_json(const ProcessSnapshot& snapshot) const {
+    nlohmann::ordered_json j;
+    memc::to_json(j, snapshot);
+    if (config_.pretty_json) {
+        return j.dump(2);
+    }
+    return j.dump();
 }
 
 /**
@@ -78,18 +79,18 @@ std::string DataCollector::to_json(const ProcessSnapshot &snapshot) const {
  * sampling is already active.
  */
 void DataCollector::start_sampling() {
-  if (sampler_ && sampler_->is_running())
-    return;
+    if (sampler_ && sampler_->is_running())
+        return;
 
-  SamplerConfig sc;
-  sc.pid = pid_;
-  sc.interval = std::chrono::milliseconds(config_.interval_ms);
-  sc.use_smaps = config_.use_smaps;
-  sc.max_snapshots = config_.max_snapshots;
+    SamplerConfig sc;
+    sc.pid = pid_;
+    sc.interval = std::chrono::milliseconds(config_.interval_ms);
+    sc.use_smaps = config_.use_smaps;
+    sc.max_snapshots = config_.max_snapshots;
 
-  sampler_ = std::make_unique<Sampler>(sc);
+    sampler_ = std::make_unique<Sampler>(sc);
 
-  sampler_->start();
+    sampler_->start();
 }
 
 /**
@@ -98,9 +99,9 @@ void DataCollector::start_sampling() {
  * If no sampler is active, this method does nothing.
  */
 void DataCollector::stop_sampling() {
-  if (sampler_) {
-    sampler_->stop();
-  }
+    if (sampler_) {
+        sampler_->stop();
+    }
 }
 
 /**
@@ -109,7 +110,7 @@ void DataCollector::stop_sampling() {
  * @return true if the sampler exists and is running, false otherwise.
  */
 bool DataCollector::is_sampling() const {
-  return sampler_ && sampler_->is_running();
+    return sampler_ && sampler_->is_running();
 }
 
 /**
@@ -119,9 +120,9 @@ bool DataCollector::is_sampling() const {
  * or an empty vector if no sampler is active.
  */
 std::vector<ProcessSnapshot> DataCollector::get_all_snapshots() const {
-  if (!sampler_)
-    return {};
-  return sampler_->get_snapshots();
+    if (!sampler_)
+        return {};
+    return sampler_->get_snapshots();
 }
 
 /**
@@ -131,9 +132,9 @@ std::vector<ProcessSnapshot> DataCollector::get_all_snapshots() const {
  * std::nullopt if no sampler is active or no snapshots exist.
  */
 std::optional<ProcessSnapshot> DataCollector::get_latest_snapshot() const {
-  if (!sampler_)
-    return std::nullopt;
-  return sampler_->get_latest();
+    if (!sampler_)
+        return std::nullopt;
+    return sampler_->get_latest();
 }
 
 /**
@@ -145,9 +146,9 @@ std::optional<ProcessSnapshot> DataCollector::get_latest_snapshot() const {
  * @param cb The callback function to register.
  */
 void DataCollector::on_snapshot(SnapshotCallback cb) {
-  if (sampler_) {
-    sampler_->on_snapshot(std::move(cb));
-  }
+    if (sampler_) {
+        sampler_->on_snapshot(std::move(cb));
+    }
 }
 
 } // namespace memc
