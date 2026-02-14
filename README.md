@@ -177,29 +177,52 @@ All output goes to **stdout** (status messages go to stderr), or to a file with 
 | `vsyscall`    | Legacy vsyscall page                 |
 | `unknown`     | Unclassified mapping                 |
 
+## Code Formatting
+
+The project uses [clang-format](https://clang.llvm.org/docs/ClangFormat.html) for consistent code style. The configuration is defined in `.clang-format` at the project root (LLVM-based, 2-space indent, 80 column limit).
+
+### Format All Files
+
+```bash
+# Format all source files in-place
+clang-format -i main.cpp src/*.cpp include/memc/*.h
+```
+
+### Check Without Modifying (CI-friendly)
+
+```bash
+# Dry-run: exits non-zero if any file needs formatting
+clang-format --dry-run --Werror main.cpp src/*.cpp include/memc/*.h
+```
+
 ## Project Structure
 
 ```
 memc/
+├── .clang-format                   # Clang-format style configuration
 ├── CMakeLists.txt                  # Build configuration (C++20, static lib + CLI)
 ├── CHANGELOG.md                    # Release history
 ├── LICENSE                         # MIT license
 ├── README.md
 ├── cmake/
 │   └── memcConfig.cmake.in         # CMake package config template
-├── main.cpp                        # CLI entry point
+├── main.cpp                        # CLI entry point (signal handling + dispatch)
 ├── include/memc/
 │   ├── version.h                  # Version macros (MEMC_VERSION_*)
 │   ├── region.h                   # MemoryRegion & ProcessSnapshot data types + JSON
 │   ├── maps_parser.h              # /proc/<pid>/maps parser
 │   ├── smaps_parser.h             # /proc/<pid>/smaps parser (optional detail)
 │   ├── sampler.h                  # Periodic background sampler (threaded)
-│   └── collector.h                # DataCollector high-level facade
+│   ├── collector.h                # DataCollector high-level facade
+│   ├── cli.h                      # CLI argument parsing & usage display
+│   └── process_utils.h            # /proc utilities (enumerate PIDs, process names)
 ├── src/
 │   ├── maps_parser.cpp
 │   ├── smaps_parser.cpp
 │   ├── sampler.cpp
-│   └── collector.cpp
+│   ├── collector.cpp
+│   ├── cli.cpp                    # CLI argument parsing implementation
+│   └── process_utils.cpp          # /proc utility implementations
 └── third_party/
     └── nlohmann/json.hpp          # Header-only JSON library (v3.11.3)
 ```
