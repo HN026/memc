@@ -1,14 +1,24 @@
-#include <memc/maps_parser.h>
-#include <memc/smaps_parser.h>
-#include <algorithm>
+
 #include <cstdio>
 #include <fstream>
+#include <memc/maps_parser.h>
+#include <memc/smaps_parser.h>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 
 namespace memc {
 
+/**
+ * @brief Parses /proc/<pid>/smaps for the given PID.
+ *
+ * Opens and reads the entire smaps file, then delegates to
+ * parse_from_string for structured parsing.
+ *
+ * @param pid The process ID to parse.
+ * @return std::optional<std::vector<MemoryRegion>> A vector of enriched
+ * MemoryRegion objects, or std::nullopt if the file could not be opened.
+ */
 std::optional<std::vector<MemoryRegion>> SmapsParser::parse(pid_t pid) {
   std::string path = "/proc/" + std::to_string(pid) + "/smaps";
   std::ifstream ifs(path);
@@ -21,6 +31,16 @@ std::optional<std::vector<MemoryRegion>> SmapsParser::parse(pid_t pid) {
   return parse_from_string(content);
 }
 
+/**
+ * @brief Parses smaps data from a raw string.
+ *
+ * Iterates over lines: header lines (starting with a hex digit) begin
+ * a new region, and subsequent detail lines update that region's fields.
+ *
+ * @param content The raw smaps content.
+ * @return std::vector<MemoryRegion> A vector of parsed MemoryRegion objects
+ * with smaps detail fields populated.
+ */
 std::vector<MemoryRegion>
 SmapsParser::parse_from_string(const std::string &content) {
   std::vector<MemoryRegion> regions;
@@ -33,10 +53,7 @@ SmapsParser::parse_from_string(const std::string &content) {
     if (line.empty())
       continue;
 
-    // Header lines look like maps lines: start with hex address
-    // Detail lines look like: Key:  value kB
     if (!line.empty() && std::isxdigit(line[0])) {
-      // This is a header line — parse it like a maps entry
       auto parsed = MapsParser::parse_from_string(line + "\n");
       if (!parsed.empty()) {
         regions.push_back(std::move(parsed[0]));
@@ -44,7 +61,6 @@ SmapsParser::parse_from_string(const std::string &content) {
         current_region->has_smaps_data = true;
       }
     } else if (current_region) {
-      // This is a detail line for the current region
       apply_detail_line(line, *current_region);
     }
   }
@@ -52,19 +68,28 @@ SmapsParser::parse_from_string(const std::string &content) {
   return regions;
 }
 
+/**
+ * @brief Enriches existing MemoryRegion objects with smaps data.
+ *
+ * Parses /proc/<pid>/smaps, builds a lookup table by start address,
+ * and copies smaps fields (RSS, PSS, swap, etc.) into matching regions.
+ * Regions not found in smaps are left unchanged.
+ *
+ * @param pid The process ID to read smaps from.
+ * @param regions The vector of MemoryRegion objects to enrich.
+ * @return true if smaps was successfully parsed, false otherwise.
+ */
 bool SmapsParser::enrich(pid_t pid, std::vector<MemoryRegion> &regions) {
   auto smaps_result = parse(pid);
   if (!smaps_result) {
     return false;
   }
 
-  // Build a lookup table by start address for the smaps data
   std::unordered_map<uint64_t, const MemoryRegion *> smaps_lookup;
   for (const auto &sr : *smaps_result) {
     smaps_lookup[sr.start_addr] = &sr;
   }
 
-  // Enrich each region
   for (auto &region : regions) {
     auto it = smaps_lookup.find(region.start_addr);
     if (it != smaps_lookup.end()) {
@@ -83,11 +108,17 @@ bool SmapsParser::enrich(pid_t pid, std::vector<MemoryRegion> &regions) {
   return true;
 }
 
+/**
+ * @brief Parses a single detail line from smaps and updates the MemoryRegion.
+ *
+ * Splits the line on ':', extracts the numeric value, and updates the
+ * corresponding field (Size, Rss, Pss, Shared_Clean, etc.) on the region.
+ *
+ * @param line The detail line (e.g., "Rss:           1024 kB").
+ * @param region The MemoryRegion to update.
+ */
 void SmapsParser::apply_detail_line(const std::string &line,
                                     MemoryRegion &region) {
-  // Detail lines have the format: "Key:         value kB"
-  // We'll extract the key and value
-
   auto colon_pos = line.find(':');
   if (colon_pos == std::string::npos)
     return;
@@ -95,11 +126,9 @@ void SmapsParser::apply_detail_line(const std::string &line,
   std::string key = line.substr(0, colon_pos);
   std::string value_part = line.substr(colon_pos + 1);
 
-  // Trim whitespace and extract numeric value
   uint64_t value = 0;
   std::sscanf(value_part.c_str(), " %lu", &value);
 
-  // Apply known keys
   if (key == "Size") {
     region.size_kb = value;
   } else if (key == "Rss") {
@@ -117,8 +146,6 @@ void SmapsParser::apply_detail_line(const std::string &line,
   } else if (key == "Swap") {
     region.swap_kb = value;
   }
-  // We silently ignore other keys (Referenced, Anonymous, LazyFree, etc.)
-  // They can be added later as needed.
 }
 
 } // namespace memc
