@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memc/collector.h>
+
 #include <string>
 #include <sys/types.h>
 
@@ -43,13 +44,13 @@ struct CLIOptions {
  * @return CLIOptions The parsed options. Check show_help, show_version,
  * and parse_error fields to determine early-exit conditions.
  */
-CLIOptions parse_args(int argc, char *argv[]);
+CLIOptions parse_args(int argc, char* argv[]);
 
 /**
  * @brief Prints the usage/help message to stderr.
  *
  * @param prog The program name (argv[0]).
  */
-void print_usage(const char *prog);
+void print_usage(const char* prog);
 
 } // namespace memc

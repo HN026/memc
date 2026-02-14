@@ -18,7 +18,9 @@ DataCollector::DataCollector(pid_t pid, Config config)
 /**
  * @brief Destructor. Ensures sampling is stopped before destruction.
  */
-DataCollector::~DataCollector() { stop_sampling(); }
+DataCollector::~DataCollector() {
+  stop_sampling();
+}
 
 /**
  * @brief Takes a single snapshot of the process memory.
@@ -61,7 +63,7 @@ std::optional<ProcessSnapshot> DataCollector::collect_once() {
  * @param snapshot The snapshot to serialize.
  * @return std::string The JSON string representation.
  */
-std::string DataCollector::to_json(const ProcessSnapshot &snapshot) const {
+std::string DataCollector::to_json(const ProcessSnapshot& snapshot) const {
   nlohmann::ordered_json j;
   memc::to_json(j, snapshot);
   if (config_.pretty_json) {
@@ -78,8 +80,7 @@ std::string DataCollector::to_json(const ProcessSnapshot &snapshot) const {
  * sampling is already active.
  */
 void DataCollector::start_sampling() {
-  if (sampler_ && sampler_->is_running())
-    return;
+  if (sampler_ && sampler_->is_running()) return;
 
   SamplerConfig sc;
   sc.pid = pid_;
@@ -119,8 +120,7 @@ bool DataCollector::is_sampling() const {
  * or an empty vector if no sampler is active.
  */
 std::vector<ProcessSnapshot> DataCollector::get_all_snapshots() const {
-  if (!sampler_)
-    return {};
+  if (!sampler_) return {};
   return sampler_->get_snapshots();
 }
 
@@ -131,8 +131,7 @@ std::vector<ProcessSnapshot> DataCollector::get_all_snapshots() const {
  * std::nullopt if no sampler is active or no snapshots exist.
  */
 std::optional<ProcessSnapshot> DataCollector::get_latest_snapshot() const {
-  if (!sampler_)
-    return std::nullopt;
+  if (!sampler_) return std::nullopt;
   return sampler_->get_latest();
 }
 

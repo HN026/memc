@@ -2,6 +2,7 @@
 
 #include <memc/region.h>
 #include <memc/sampler.h>
+
 #include <memory>
 #include <optional>
 #include <string>
@@ -69,7 +70,7 @@ public:
    * @param snapshot The snapshot object to serialize.
    * @return std::string A JSON string representation of the snapshot.
    */
-  virtual std::string to_json(const ProcessSnapshot &snapshot) const;
+  virtual std::string to_json(const ProcessSnapshot& snapshot) const;
 
   /**
    * @brief Starts periodic background sampling of the process memory.

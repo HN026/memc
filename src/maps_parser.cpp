@@ -1,6 +1,7 @@
+#include <memc/maps_parser.h>
+
 #include <cstdio>
 #include <fstream>
-#include <memc/maps_parser.h>
 #include <sstream>
 #include <string>
 
@@ -37,15 +38,14 @@ std::optional<std::vector<MemoryRegion>> MapsParser::parse(pid_t pid) {
  * @param content The raw content of a maps file.
  * @return std::vector<MemoryRegion> A vector of successfully parsed regions.
  */
-std::vector<MemoryRegion>
-MapsParser::parse_from_string(const std::string &content) {
+std::vector<MemoryRegion> MapsParser::parse_from_string(
+    const std::string& content) {
   std::vector<MemoryRegion> regions;
   std::istringstream stream(content);
   std::string line;
 
   while (std::getline(stream, line)) {
-    if (line.empty())
-      continue;
+    if (line.empty()) continue;
     auto region = parse_line(line);
     if (region) {
       regions.push_back(std::move(*region));
@@ -65,7 +65,7 @@ MapsParser::parse_from_string(const std::string &content) {
  * @return std::optional<MemoryRegion> The parsed region, or std::nullopt
  * if fewer than 6 fields could be read.
  */
-std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
+std::optional<MemoryRegion> MapsParser::parse_line(const std::string& line) {
 
   MemoryRegion region;
 
@@ -89,7 +89,7 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
   region.device = dev;
   region.inode = inode;
 
-  const char *p = line.c_str();
+  const char* p = line.c_str();
   int spaces = 0;
   bool in_space = false;
   while (*p) {
@@ -137,8 +137,8 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
  * @param permissions The permissions string (e.g., "rw-p").
  * @return RegionType The classified region type.
  */
-RegionType MapsParser::classify_region(const std::string &pathname,
-                                       const std::string &permissions) {
+RegionType MapsParser::classify_region(const std::string& pathname,
+                                       const std::string& permissions) {
   if (pathname == "[heap]") {
     return RegionType::HEAP;
   }

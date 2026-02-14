@@ -18,7 +18,7 @@ namespace memc {
  * @param argv The argument vector.
  * @return CLIOptions The parsed options.
  */
-CLIOptions parse_args(int argc, char *argv[]) {
+CLIOptions parse_args(int argc, char* argv[]) {
   CLIOptions opts;
 
   for (int i = 1; i < argc; i++) {
@@ -94,7 +94,7 @@ CLIOptions parse_args(int argc, char *argv[]) {
  *
  * @param prog The program name (argv[0]).
  */
-void print_usage(const char *prog) {
+void print_usage(const char* prog) {
   std::cerr
       << "Usage: " << prog << " <pid> [options]\n"
       << "       " << prog << " --all [options]\n"

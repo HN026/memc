@@ -1,8 +1,9 @@
-#include <chrono>
-#include <iostream>
 #include <memc/maps_parser.h>
 #include <memc/sampler.h>
 #include <memc/smaps_parser.h>
+
+#include <chrono>
+#include <iostream>
 
 namespace memc {
 
@@ -16,7 +17,9 @@ Sampler::Sampler(SamplerConfig config) : config_(std::move(config)) {}
 /**
  * @brief Destructor. Ensures the sampling thread is stopped and joined.
  */
-Sampler::~Sampler() { stop(); }
+Sampler::~Sampler() {
+  stop();
+}
 
 /**
  * @brief Starts the background sampling thread.
@@ -25,8 +28,7 @@ Sampler::~Sampler() { stop(); }
  * Otherwise, it sets the running flag and spawns the sample loop thread.
  */
 void Sampler::start() {
-  if (running_.load())
-    return;
+  if (running_.load()) return;
   running_.store(true);
   thread_ = std::thread(&Sampler::sample_loop, this);
 }
@@ -60,7 +62,9 @@ void Sampler::on_snapshot(SnapshotCallback cb) {
  *
  * @return true if the sampling thread is active, false otherwise.
  */
-bool Sampler::is_running() const { return running_.load(); }
+bool Sampler::is_running() const {
+  return running_.load();
+}
 
 /**
  * @brief Returns the total number of snapshots collected so far.
@@ -96,8 +100,7 @@ std::vector<ProcessSnapshot> Sampler::get_snapshots() const {
  */
 std::optional<ProcessSnapshot> Sampler::get_latest() const {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (snapshots_.empty())
-    return std::nullopt;
+  if (snapshots_.empty()) return std::nullopt;
   return snapshots_.back();
 }
 
@@ -122,10 +125,10 @@ void Sampler::sample_loop() {
 
       snapshots_.push_back(snapshot);
 
-      for (const auto &cb : callbacks_) {
+      for (const auto& cb : callbacks_) {
         try {
           cb(snapshot);
-        } catch (const std::exception &e) {
+        } catch (const std::exception& e) {
           std::cerr << "[memc] Snapshot callback threw: " << e.what()
                     << std::endl;
         }

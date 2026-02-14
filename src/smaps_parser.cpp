@@ -1,8 +1,9 @@
 
-#include <cstdio>
-#include <fstream>
 #include <memc/maps_parser.h>
 #include <memc/smaps_parser.h>
+
+#include <cstdio>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -41,17 +42,16 @@ std::optional<std::vector<MemoryRegion>> SmapsParser::parse(pid_t pid) {
  * @return std::vector<MemoryRegion> A vector of parsed MemoryRegion objects
  * with smaps detail fields populated.
  */
-std::vector<MemoryRegion>
-SmapsParser::parse_from_string(const std::string &content) {
+std::vector<MemoryRegion> SmapsParser::parse_from_string(
+    const std::string& content) {
   std::vector<MemoryRegion> regions;
   std::istringstream stream(content);
   std::string line;
 
-  MemoryRegion *current_region = nullptr;
+  MemoryRegion* current_region = nullptr;
 
   while (std::getline(stream, line)) {
-    if (line.empty())
-      continue;
+    if (line.empty()) continue;
 
     if (!line.empty() && std::isxdigit(line[0])) {
       auto parsed = MapsParser::parse_from_string(line + "\n");
@@ -79,21 +79,21 @@ SmapsParser::parse_from_string(const std::string &content) {
  * @param regions The vector of MemoryRegion objects to enrich.
  * @return true if smaps was successfully parsed, false otherwise.
  */
-bool SmapsParser::enrich(pid_t pid, std::vector<MemoryRegion> &regions) {
+bool SmapsParser::enrich(pid_t pid, std::vector<MemoryRegion>& regions) {
   auto smaps_result = parse(pid);
   if (!smaps_result) {
     return false;
   }
 
-  std::unordered_map<uint64_t, const MemoryRegion *> smaps_lookup;
-  for (const auto &sr : *smaps_result) {
+  std::unordered_map<uint64_t, const MemoryRegion*> smaps_lookup;
+  for (const auto& sr : *smaps_result) {
     smaps_lookup[sr.start_addr] = &sr;
   }
 
-  for (auto &region : regions) {
+  for (auto& region : regions) {
     auto it = smaps_lookup.find(region.start_addr);
     if (it != smaps_lookup.end()) {
-      const auto &sr = *it->second;
+      const auto& sr = *it->second;
       region.rss_kb = sr.rss_kb;
       region.pss_kb = sr.pss_kb;
       region.shared_clean_kb = sr.shared_clean_kb;
@@ -117,11 +117,10 @@ bool SmapsParser::enrich(pid_t pid, std::vector<MemoryRegion> &regions) {
  * @param line The detail line (e.g., "Rss:           1024 kB").
  * @param region The MemoryRegion to update.
  */
-void SmapsParser::apply_detail_line(const std::string &line,
-                                    MemoryRegion &region) {
+void SmapsParser::apply_detail_line(const std::string& line,
+                                    MemoryRegion& region) {
   auto colon_pos = line.find(':');
-  if (colon_pos == std::string::npos)
-    return;
+  if (colon_pos == std::string::npos) return;
 
   std::string key = line.substr(0, colon_pos);
   std::string value_part = line.substr(colon_pos + 1);

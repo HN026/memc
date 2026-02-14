@@ -19,15 +19,14 @@ namespace memc {
  */
 std::vector<pid_t> enumerate_pids() {
   std::vector<pid_t> pids;
-  DIR *dir = opendir("/proc");
-  if (!dir)
-    return pids;
+  DIR* dir = opendir("/proc");
+  if (!dir) return pids;
 
-  struct dirent *entry;
+  struct dirent* entry;
   while ((entry = readdir(dir)) != nullptr) {
-    const char *name = entry->d_name;
+    const char* name = entry->d_name;
     bool is_pid = true;
-    for (const char *p = name; *p; ++p) {
+    for (const char* p = name; *p; ++p) {
       if (!std::isdigit(static_cast<unsigned char>(*p))) {
         is_pid = false;
         break;

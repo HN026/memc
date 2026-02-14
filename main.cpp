@@ -26,7 +26,9 @@ static std::atomic<bool> g_running{true};
  *
  * @param sig The signal number (unused).
  */
-static void signal_handler(int /*sig*/) { g_running.store(false); }
+static void signal_handler(int /*sig*/) {
+  g_running.store(false);
+}
 
 /**
  * @brief Writes a JSON string to the configured output destination.
@@ -38,8 +40,8 @@ static void signal_handler(int /*sig*/) { g_running.store(false); }
  * @param output_file Path to the output file (empty = stdout).
  * @return true if the write was successful, false otherwise.
  */
-static bool write_output(const std::string &json_str,
-                         const std::string &output_file) {
+static bool write_output(const std::string& json_str,
+                         const std::string& output_file) {
   if (!output_file.empty()) {
     std::ofstream ofs(output_file);
     if (!ofs.is_open()) {
@@ -64,7 +66,7 @@ static bool write_output(const std::string &json_str,
  * @param opts The parsed CLI options.
  * @return int 0 on success.
  */
-static int run_all_mode(const memc::CLIOptions &opts) {
+static int run_all_mode(const memc::CLIOptions& opts) {
   auto pids = memc::enumerate_pids();
   std::cerr << "Scanning " << pids.size() << " processes"
             << (opts.collector_config.use_smaps ? " (with smaps)" : "")
@@ -85,8 +87,7 @@ static int run_all_mode(const memc::CLIOptions &opts) {
   int skipped = 0;
 
   for (pid_t p : pids) {
-    if (!g_running.load())
-      break;
+    if (!g_running.load()) break;
 
     memc::DataCollector collector(p, opts.collector_config);
     auto snapshot = collector.collect_once();
@@ -136,7 +137,7 @@ static int run_all_mode(const memc::CLIOptions &opts) {
  * @param opts The parsed CLI options.
  * @return int 0 on success, 1 on failure.
  */
-static int run_single_pid(const memc::CLIOptions &opts) {
+static int run_single_pid(const memc::CLIOptions& opts) {
   memc::DataCollector collector(opts.pid, opts.collector_config);
 
   if (opts.count == 1) {
@@ -195,7 +196,7 @@ static int run_single_pid(const memc::CLIOptions &opts) {
  * @param argv The argument vector.
  * @return int 0 on success, 1 on error.
  */
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     memc::print_usage(argv[0]);
     return 1;

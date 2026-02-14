@@ -1,9 +1,10 @@
 #pragma once
 
+#include <third_party/nlohmann/json.hpp>
+
 #include <cstdint>
 #include <cstdio>
 #include <string>
-#include <third_party/nlohmann/json.hpp>
 #include <vector>
 
 namespace memc {
@@ -32,7 +33,7 @@ enum class RegionType {
  * @return const char* A string literal representing the region type (e.g.,
  * "heap", "stack"). Returns "unknown" if the type is not recognized.
  */
-inline const char *region_type_to_string(RegionType t) {
+inline const char* region_type_to_string(RegionType t) {
   switch (t) {
   case RegionType::HEAP:
     return "heap";
@@ -125,7 +126,7 @@ struct MemoryRegion {
  * @param j The JSON object to populate.
  * @param r The MemoryRegion object to serialize.
  */
-inline void to_json(nlohmann::ordered_json &j, const MemoryRegion &r) {
+inline void to_json(nlohmann::ordered_json& j, const MemoryRegion& r) {
   char start_buf[32], end_buf[32];
   std::snprintf(start_buf, sizeof(start_buf), "0x%lx", r.start_addr);
   std::snprintf(end_buf, sizeof(end_buf), "0x%lx", r.end_addr);
@@ -175,7 +176,7 @@ struct ProcessSnapshot {
    */
   [[nodiscard]] uint64_t total_rss_kb() const {
     uint64_t total = 0;
-    for (const auto &r : regions)
+    for (const auto& r : regions)
       total += r.rss_kb;
     return total;
   }
@@ -187,7 +188,7 @@ struct ProcessSnapshot {
    */
   [[nodiscard]] uint64_t total_vsize_kb() const {
     uint64_t total = 0;
-    for (const auto &r : regions)
+    for (const auto& r : regions)
       total += r.size_bytes();
     return total / 1024;
   }
@@ -203,7 +204,7 @@ struct ProcessSnapshot {
  * @param j The JSON object to populate.
  * @param s The ProcessSnapshot object to serialize.
  */
-inline void to_json(nlohmann::ordered_json &j, const ProcessSnapshot &s) {
+inline void to_json(nlohmann::ordered_json& j, const ProcessSnapshot& s) {
   j = nlohmann::ordered_json{};
   j["pid"] = s.pid;
   j["timestamp_ms"] = s.timestamp_ms;
@@ -212,7 +213,7 @@ inline void to_json(nlohmann::ordered_json &j, const ProcessSnapshot &s) {
   j["region_count"] = s.regions.size();
 
   j["regions"] = nlohmann::ordered_json::array();
-  for (const auto &r : s.regions) {
+  for (const auto& r : s.regions) {
     nlohmann::ordered_json rj;
     to_json(rj, r);
     j["regions"].push_back(std::move(rj));

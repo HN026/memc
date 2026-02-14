@@ -1,0 +1,83 @@
+# memc Clang-Format Configuration
+# Apply with:  clang-format -i main.cpp src/*.cpp include/memc/*.h
+
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+# ── Indentation ──────────────────────────────────────────────────────
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+IndentCaseLabels: false
+NamespaceIndentation: None
+IndentWrappedFunctionNames: false
+
+# ── Column Limit & Line Breaking ─────────────────────────────────────
+ColumnLimit: 80
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortLambdasOnASingleLine: Inline
+
+# ── Braces ───────────────────────────────────────────────────────────
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterClass: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterEnum: false
+  BeforeElse: true
+  BeforeCatch: true
+
+# ── Alignment ────────────────────────────────────────────────────────
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+AlignOperands: true
+
+# ── Pointer & Reference Alignment ────────────────────────────────────
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# ── Includes ─────────────────────────────────────────────────────────
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # Project headers: #include <memc/...>
+  - Regex: '^<memc/'
+    Priority: 1
+  # Third-party headers: #include <third_party/...>
+  - Regex: '^<third_party/'
+    Priority: 2
+  # System/STL headers
+  - Regex: '^<'
+    Priority: 3
+  # Quoted local headers
+  - Regex: '^"'
+    Priority: 0
+
+# ── Spaces ───────────────────────────────────────────────────────────
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpacesInAngles: Never
+SpacesInParentheses: false
+
+# ── Other ────────────────────────────────────────────────────────────
+ReflowComments: true
+SortUsingDeclarations: true
+FixNamespaceComments: true
+CompactNamespaces: false
+Cpp11BracedListStyle: true
+SpaceBeforeCpp11BracedList: false
+
+# ── Penalty Tuning ───────────────────────────────────────────────────
+PenaltyReturnTypeOnItsOwnLine: 200
+PenaltyBreakBeforeFirstCallParameter: 19
+...

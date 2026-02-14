@@ -1,9 +1,10 @@
 #pragma once
 
+#include <memc/region.h>
+
 #include <atomic>
 #include <chrono>
 #include <functional>
-#include <memc/region.h>
 #include <mutex>
 #include <optional>
 #include <thread>
@@ -29,7 +30,7 @@ struct SamplerConfig {
 };
 
 /// Callback type invoked on each new snapshot.
-using SnapshotCallback = std::function<void(const ProcessSnapshot &)>;
+using SnapshotCallback = std::function<void(const ProcessSnapshot&)>;
 
 /**
  * Periodically samples /proc/<pid>/maps (and optionally smaps)
@@ -41,8 +42,8 @@ public:
   ~Sampler();
 
   // Non-copyable, non-movable (owns a thread)
-  Sampler(const Sampler &) = delete;
-  Sampler &operator=(const Sampler &) = delete;
+  Sampler(const Sampler&) = delete;
+  Sampler& operator=(const Sampler&) = delete;
 
   /**
    * @brief Starts the sampling thread.

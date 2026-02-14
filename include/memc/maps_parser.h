@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memc/region.h>
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -34,8 +35,8 @@ public:
    * @param content The raw content of a maps file.
    * @return std::vector<MemoryRegion> A vector of parsed MemoryRegion objects.
    */
-  static std::vector<MemoryRegion>
-  parse_from_string(const std::string &content);
+  static std::vector<MemoryRegion> parse_from_string(
+      const std::string& content);
 
 private:
   /**
@@ -45,7 +46,7 @@ private:
    * @return std::optional<MemoryRegion> The parsed MemoryRegion, or
    * std::nullopt if parsing failed.
    */
-  static std::optional<MemoryRegion> parse_line(const std::string &line);
+  static std::optional<MemoryRegion> parse_line(const std::string& line);
 
   /**
    * @brief Classifies a memory region based on its pathname and permissions.
@@ -54,8 +55,8 @@ private:
    * @param permissions The permissions string (e.g., "rw-p").
    * @return RegionType The classified region type.
    */
-  static RegionType classify_region(const std::string &pathname,
-                                    const std::string &permissions);
+  static RegionType classify_region(const std::string& pathname,
+                                    const std::string& permissions);
 };
 
 } // namespace memc
