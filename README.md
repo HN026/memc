@@ -177,32 +177,24 @@ All output goes to **stdout** (status messages go to stderr), or to a file with 
 | `vsyscall`    | Legacy vsyscall page                 |
 | `unknown`     | Unclassified mapping                 |
 
-## Project Structure
+## Code Formatting
 
+This project uses [clang-format](https://clang.llvm.org/docs/ClangFormat.html) to enforce a consistent code style across all C/C++ source and header files. The configuration is defined in the `.clang-format` file at the project root.
+
+### Formatting Commands
+
+```bash
+# Format a single file
+clang-format -i src/collector.cpp
+
+# Format all project source files (excludes third_party/)
+find . -type f \( -name '*.cpp' -o -name '*.h' \) ! -path './third_party/*' | xargs clang-format -i
+
+# Dry-run (check without modifying)
+find . -type f \( -name '*.cpp' -o -name '*.h' \) ! -path './third_party/*' | xargs clang-format --dry-run -Werror
 ```
-memc/
-├── CMakeLists.txt                  # Build configuration (C++20, static lib + CLI)
-├── CHANGELOG.md                    # Release history
-├── LICENSE                         # MIT license
-├── README.md
-├── cmake/
-│   └── memcConfig.cmake.in         # CMake package config template
-├── main.cpp                        # CLI entry point
-├── include/memc/
-│   ├── version.h                  # Version macros (MEMC_VERSION_*)
-│   ├── region.h                   # MemoryRegion & ProcessSnapshot data types + JSON
-│   ├── maps_parser.h              # /proc/<pid>/maps parser
-│   ├── smaps_parser.h             # /proc/<pid>/smaps parser (optional detail)
-│   ├── sampler.h                  # Periodic background sampler (threaded)
-│   └── collector.h                # DataCollector high-level facade
-├── src/
-│   ├── maps_parser.cpp
-│   ├── smaps_parser.cpp
-│   ├── sampler.cpp
-│   └── collector.cpp
-└── third_party/
-    └── nlohmann/json.hpp          # Header-only JSON library (v3.11.3)
-```
+
+> **Note:** The `third_party/` directory (e.g. `nlohmann/json.hpp`) is intentionally excluded from formatting.
 
 ## Library API
 

@@ -11,12 +11,15 @@ namespace memc {
  *
  * @param config The sampler configuration (PID, interval, smaps, etc.).
  */
-Sampler::Sampler(SamplerConfig config) : config_(std::move(config)) {}
+Sampler::Sampler(SamplerConfig config)
+    : config_(std::move(config)) {}
 
 /**
  * @brief Destructor. Ensures the sampling thread is stopped and joined.
  */
-Sampler::~Sampler() { stop(); }
+Sampler::~Sampler() {
+    stop();
+}
 
 /**
  * @brief Starts the background sampling thread.
@@ -25,10 +28,10 @@ Sampler::~Sampler() { stop(); }
  * Otherwise, it sets the running flag and spawns the sample loop thread.
  */
 void Sampler::start() {
-  if (running_.load())
-    return;
-  running_.store(true);
-  thread_ = std::thread(&Sampler::sample_loop, this);
+    if (running_.load())
+        return;
+    running_.store(true);
+    thread_ = std::thread(&Sampler::sample_loop, this);
 }
 
 /**
@@ -37,10 +40,10 @@ void Sampler::start() {
  * Sets the running flag to false and blocks until the thread has joined.
  */
 void Sampler::stop() {
-  running_.store(false);
-  if (thread_.joinable()) {
-    thread_.join();
-  }
+    running_.store(false);
+    if (thread_.joinable()) {
+        thread_.join();
+    }
 }
 
 /**
@@ -51,8 +54,8 @@ void Sampler::stop() {
  * @param cb The callback function to register.
  */
 void Sampler::on_snapshot(SnapshotCallback cb) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  callbacks_.push_back(std::move(cb));
+    std::lock_guard<std::mutex> lock(mutex_);
+    callbacks_.push_back(std::move(cb));
 }
 
 /**
@@ -60,7 +63,9 @@ void Sampler::on_snapshot(SnapshotCallback cb) {
  *
  * @return true if the sampling thread is active, false otherwise.
  */
-bool Sampler::is_running() const { return running_.load(); }
+bool Sampler::is_running() const {
+    return running_.load();
+}
 
 /**
  * @brief Returns the total number of snapshots collected so far.
@@ -70,8 +75,8 @@ bool Sampler::is_running() const { return running_.load(); }
  * @return size_t The number of snapshots in the buffer.
  */
 size_t Sampler::snapshot_count() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  return snapshots_.size();
+    std::lock_guard<std::mutex> lock(mutex_);
+    return snapshots_.size();
 }
 
 /**
@@ -82,8 +87,8 @@ size_t Sampler::snapshot_count() const {
  * @return std::vector<ProcessSnapshot> Copy of all snapshots.
  */
 std::vector<ProcessSnapshot> Sampler::get_snapshots() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  return snapshots_;
+    std::lock_guard<std::mutex> lock(mutex_);
+    return snapshots_;
 }
 
 /**
@@ -95,10 +100,10 @@ std::vector<ProcessSnapshot> Sampler::get_snapshots() const {
  * std::nullopt if no snapshots have been collected.
  */
 std::optional<ProcessSnapshot> Sampler::get_latest() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (snapshots_.empty())
-    return std::nullopt;
-  return snapshots_.back();
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (snapshots_.empty())
+        return std::nullopt;
+    return snapshots_.back();
 }
 
 /**
@@ -109,34 +114,32 @@ std::optional<ProcessSnapshot> Sampler::get_latest() const {
  * and then sleeps until the next interval.
  */
 void Sampler::sample_loop() {
-  while (running_.load()) {
-    auto snapshot = take_snapshot();
+    while (running_.load()) {
+        auto snapshot = take_snapshot();
 
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
 
-      if (config_.max_snapshots > 0 &&
-          snapshots_.size() >= config_.max_snapshots) {
-        snapshots_.erase(snapshots_.begin());
-      }
+            if (config_.max_snapshots > 0 && snapshots_.size() >= config_.max_snapshots) {
+                snapshots_.erase(snapshots_.begin());
+            }
 
-      snapshots_.push_back(snapshot);
+            snapshots_.push_back(snapshot);
 
-      for (const auto &cb : callbacks_) {
-        try {
-          cb(snapshot);
-        } catch (const std::exception &e) {
-          std::cerr << "[memc] Snapshot callback threw: " << e.what()
-                    << std::endl;
+            for (const auto& cb : callbacks_) {
+                try {
+                    cb(snapshot);
+                } catch (const std::exception& e) {
+                    std::cerr << "[memc] Snapshot callback threw: " << e.what() << std::endl;
+                }
+            }
         }
-      }
-    }
 
-    auto deadline = std::chrono::steady_clock::now() + config_.interval;
-    while (running_.load() && std::chrono::steady_clock::now() < deadline) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        auto deadline = std::chrono::steady_clock::now() + config_.interval;
+        while (running_.load() && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
     }
-  }
 }
 
 /**
@@ -148,19 +151,18 @@ void Sampler::sample_loop() {
  * @return ProcessSnapshot The captured snapshot.
  */
 ProcessSnapshot Sampler::take_snapshot() {
-  ProcessSnapshot snapshot;
-  snapshot.pid = config_.pid;
+    ProcessSnapshot snapshot;
+    snapshot.pid = config_.pid;
 
-  auto now = std::chrono::system_clock::now();
-  snapshot.timestamp_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                              now.time_since_epoch())
-                              .count();
+    auto now = std::chrono::system_clock::now();
+    snapshot.timestamp_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
-  if (config_.use_smaps) {
-    SmapsParser::enrich(config_.pid, snapshot.regions);
-  }
+    if (config_.use_smaps) {
+        SmapsParser::enrich(config_.pid, snapshot.regions);
+    }
 
-  return snapshot;
+    return snapshot;
 }
 
 } // namespace memc

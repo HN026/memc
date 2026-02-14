@@ -1,10 +1,9 @@
-#include <memc/process_utils.h>
-
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <dirent.h>
 #include <fstream>
+#include <memc/process_utils.h>
 #include <string>
 
 namespace memc {
@@ -18,29 +17,29 @@ namespace memc {
  * @return std::vector<pid_t> A sorted list of discovered PIDs.
  */
 std::vector<pid_t> enumerate_pids() {
-  std::vector<pid_t> pids;
-  DIR *dir = opendir("/proc");
-  if (!dir)
+    std::vector<pid_t> pids;
+    DIR* dir = opendir("/proc");
+    if (!dir)
+        return pids;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        const char* name = entry->d_name;
+        bool is_pid = true;
+        for (const char* p = name; *p; ++p) {
+            if (!std::isdigit(static_cast<unsigned char>(*p))) {
+                is_pid = false;
+                break;
+            }
+        }
+        if (is_pid && name[0] != '\0') {
+            pids.push_back(static_cast<pid_t>(std::atoi(name)));
+        }
+    }
+    closedir(dir);
+
+    std::sort(pids.begin(), pids.end());
     return pids;
-
-  struct dirent *entry;
-  while ((entry = readdir(dir)) != nullptr) {
-    const char *name = entry->d_name;
-    bool is_pid = true;
-    for (const char *p = name; *p; ++p) {
-      if (!std::isdigit(static_cast<unsigned char>(*p))) {
-        is_pid = false;
-        break;
-      }
-    }
-    if (is_pid && name[0] != '\0') {
-      pids.push_back(static_cast<pid_t>(std::atoi(name)));
-    }
-  }
-  closedir(dir);
-
-  std::sort(pids.begin(), pids.end());
-  return pids;
 }
 
 /**
@@ -50,16 +49,16 @@ std::vector<pid_t> enumerate_pids() {
  * @return std::string The process name, or "unknown" if not found.
  */
 std::string get_process_name(pid_t pid) {
-  std::string path = "/proc/" + std::to_string(pid) + "/comm";
-  std::ifstream ifs(path);
-  std::string name;
-  if (ifs.is_open() && std::getline(ifs, name)) {
-    while (!name.empty() && (name.back() == '\n' || name.back() == '\r')) {
-      name.pop_back();
+    std::string path = "/proc/" + std::to_string(pid) + "/comm";
+    std::ifstream ifs(path);
+    std::string name;
+    if (ifs.is_open() && std::getline(ifs, name)) {
+        while (!name.empty() && (name.back() == '\n' || name.back() == '\r')) {
+            name.pop_back();
+        }
+        return name;
     }
-    return name;
-  }
-  return "unknown";
+    return "unknown";
 }
 
 } // namespace memc

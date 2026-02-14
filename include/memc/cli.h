@@ -22,17 +22,17 @@ namespace memc {
  * - error_message: Description of the parse error, if any.
  */
 struct CLIOptions {
-  pid_t pid = 0;
-  bool all_mode = false;
-  bool skip_kernel = false;
-  int count = 1;
-  std::string output_file;
-  DataCollector::Config collector_config;
+    pid_t pid = 0;
+    bool all_mode = false;
+    bool skip_kernel = false;
+    int count = 1;
+    std::string output_file;
+    DataCollector::Config collector_config;
 
-  bool show_help = false;
-  bool show_version = false;
-  bool parse_error = false;
-  std::string error_message;
+    bool show_help = false;
+    bool show_version = false;
+    bool parse_error = false;
+    std::string error_message;
 };
 
 /**
@@ -43,13 +43,13 @@ struct CLIOptions {
  * @return CLIOptions The parsed options. Check show_help, show_version,
  * and parse_error fields to determine early-exit conditions.
  */
-CLIOptions parse_args(int argc, char *argv[]);
+CLIOptions parse_args(int argc, char* argv[]);
 
 /**
  * @brief Prints the usage/help message to stderr.
  *
  * @param prog The program name (argv[0]).
  */
-void print_usage(const char *prog);
+void print_usage(const char* prog);
 
 } // namespace memc
