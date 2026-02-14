@@ -12,18 +12,29 @@
 namespace memc {
 
 /// Configuration for the periodic sampler.
+/**
+ * @brief Configuration for the periodic Sampler.
+ *
+ * Fields:
+ * - pid: The process ID to monitor.
+ * - interval: The time duration between snapshots.
+ * - use_smaps: If true, detailed memory statistics are read from smaps.
+ * - max_snapshots: Size of the history ring buffer. 0 implies no limit.
+ */
 struct SamplerConfig {
   pid_t pid;
-  std::chrono::milliseconds interval{1000}; ///< Sampling interval
-  bool use_smaps{false};                    ///< Read smaps for detailed info
-  size_t max_snapshots{0}; ///< Ring buffer size (0 = unlimited)
+  std::chrono::milliseconds interval{1000};
+  bool use_smaps{false};
+  size_t max_snapshots{0};
 };
 
 /// Callback type invoked on each new snapshot.
 using SnapshotCallback = std::function<void(const ProcessSnapshot &)>;
 
-/// Periodically samples /proc/<pid>/maps (and optionally smaps)
-/// and stores snapshots in a thread-safe ring buffer.
+/**
+ * Periodically samples /proc/<pid>/maps (and optionally smaps)
+ * and stores snapshots in a thread-safe ring buffer.
+ */
 class Sampler {
 public:
   explicit Sampler(SamplerConfig config);
@@ -33,31 +44,61 @@ public:
   Sampler(const Sampler &) = delete;
   Sampler &operator=(const Sampler &) = delete;
 
-  /// Start sampling in a background thread.
+  /**
+   * @brief Starts the sampling thread.
+   *
+   * If the sampler is already running, this method does nothing.
+   */
   void start();
 
-  /// Stop sampling. Blocks until the background thread joins.
+  /**
+   * @brief Stops the sampling thread.
+   *
+   * This method blocks until the background thread has joined.
+   */
   void stop();
 
-  /// Register a callback to be invoked after each snapshot is taken.
+  /**
+   * @brief Registers a callback to be invoked after each snapshot.
+   *
+   * @param cb The callback function.
+   */
   void on_snapshot(SnapshotCallback cb);
 
-  /// Check if the sampler is currently running.
+  /**
+   * @brief Checks if the sampler is currently running.
+   *
+   * @return true if running, false otherwise.
+   */
   [[nodiscard]] bool is_running() const;
 
-  /// Get the number of snapshots collected so far.
+  /**
+   * @brief Returns the total number of snapshots collected.
+   *
+   * @return size_t The number of snapshots.
+   */
   [[nodiscard]] size_t snapshot_count() const;
 
-  /// Get a copy of all collected snapshots (thread-safe).
+  /**
+   * @brief returns all collected snapshots.
+   *
+   * This operation is thread-safe and returns a copy of the internal buffer.
+   *
+   * @return std::vector<ProcessSnapshot> Copy of all snapshots.
+   */
   [[nodiscard]] std::vector<ProcessSnapshot> get_snapshots() const;
 
-  /// Get the latest snapshot (thread-safe). Returns std::nullopt if none yet.
+  /**
+   * @brief Returns the most recent snapshot.
+   *
+   * @return std::optional<ProcessSnapshot> The latest snapshot, or std::nullopt
+   * if none exist.
+   */
   [[nodiscard]] std::optional<ProcessSnapshot> get_latest() const;
 
 private:
   void sample_loop();
   ProcessSnapshot take_snapshot();
-
   SamplerConfig config_;
   std::atomic<bool> running_{false};
   std::thread thread_;

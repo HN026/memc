@@ -1,11 +1,21 @@
-#include <memc/maps_parser.h>
 #include <cstdio>
 #include <fstream>
+#include <memc/maps_parser.h>
 #include <sstream>
 #include <string>
 
 namespace memc {
 
+/**
+ * @brief Parses /proc/<pid>/maps for the given PID.
+ *
+ * Opens and reads the entire maps file, then delegates to
+ * parse_from_string for line-by-line parsing.
+ *
+ * @param pid The process ID to parse.
+ * @return std::optional<std::vector<MemoryRegion>> A vector of MemoryRegion
+ * objects, or std::nullopt if the file could not be opened.
+ */
 std::optional<std::vector<MemoryRegion>> MapsParser::parse(pid_t pid) {
   std::string path = "/proc/" + std::to_string(pid) + "/maps";
   std::ifstream ifs(path);
@@ -18,6 +28,15 @@ std::optional<std::vector<MemoryRegion>> MapsParser::parse(pid_t pid) {
   return parse_from_string(content);
 }
 
+/**
+ * @brief Parses memory regions from a raw maps-format string.
+ *
+ * Iterates over each line of the input, parsing it into a MemoryRegion.
+ * Empty lines are skipped; malformed lines are silently ignored.
+ *
+ * @param content The raw content of a maps file.
+ * @return std::vector<MemoryRegion> A vector of successfully parsed regions.
+ */
 std::vector<MemoryRegion>
 MapsParser::parse_from_string(const std::string &content) {
   std::vector<MemoryRegion> regions;
@@ -36,20 +55,26 @@ MapsParser::parse_from_string(const std::string &content) {
   return regions;
 }
 
+/**
+ * @brief Parses a single line from a maps file into a MemoryRegion.
+ *
+ * Extracts the address range, permissions, offset, device, inode, and
+ * optional pathname using sscanf, then classifies the region type.
+ *
+ * @param line The line to parse (e.g., "7f2c5c000000-7f2c5c021000 rw-p ...").
+ * @return std::optional<MemoryRegion> The parsed region, or std::nullopt
+ * if fewer than 6 fields could be read.
+ */
 std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
-  // Format: start-end perms offset dev inode pathname
-  // Example: 7f2c5c000000-7f2c5c021000 rw-p 00000000 00:00 0  [heap]
 
   MemoryRegion region;
 
-  // Parse the address range
   uint64_t start = 0, end = 0;
   char perms[8] = {};
   uint64_t offset = 0;
   char dev[16] = {};
   uint64_t inode = 0;
 
-  // Use sscanf for the fixed-format portion
   int fields_read = std::sscanf(line.c_str(), "%lx-%lx %4s %lx %15s %lu",
                                 &start, &end, perms, &offset, dev, &inode);
 
@@ -64,10 +89,6 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
   region.device = dev;
   region.inode = inode;
 
-  // Extract the pathname (everything after the inode field)
-  // Find position after the inode
-  // The format is fixed-width, but the pathname column can be variable
-  // We'll skip past the first 5 whitespace-delimited tokens then grab the rest
   const char *p = line.c_str();
   int spaces = 0;
   bool in_space = false;
@@ -87,12 +108,10 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
   }
 
   if (*p) {
-    // Skip leading whitespace before pathname
     while (*p == ' ' || *p == '\t')
       p++;
     if (*p) {
       region.pathname = p;
-      // Trim trailing whitespace
       while (!region.pathname.empty() &&
              (region.pathname.back() == ' ' || region.pathname.back() == '\t' ||
               region.pathname.back() == '\n' ||
@@ -102,57 +121,59 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string &line) {
     }
   }
 
-  // Classify the region type
   region.type = classify_region(region.pathname, region.permissions);
-
-  // Calculate size (without smaps, we don't have RSS, so just set size)
   region.size_kb = (end - start) / 1024;
 
   return region;
 }
 
+/**
+ * @brief Classifies a memory region based on its pathname and permissions.
+ *
+ * Uses pattern matching on the pathname (e.g., "[heap]", "[stack]", ".so")
+ * and permission flags to determine the RegionType.
+ *
+ * @param pathname The pathname associated with the region.
+ * @param permissions The permissions string (e.g., "rw-p").
+ * @return RegionType The classified region type.
+ */
 RegionType MapsParser::classify_region(const std::string &pathname,
                                        const std::string &permissions) {
   if (pathname == "[heap]") {
-    return RegionType::Heap;
+    return RegionType::HEAP;
   }
   if (pathname.find("[stack") != std::string::npos) {
-    // Matches [stack] and [stack:<tid>]
-    return RegionType::Stack;
+    return RegionType::STACK;
   }
   if (pathname == "[vdso]") {
-    return RegionType::Vdso;
+    return RegionType::VDSO;
   }
   if (pathname == "[vvar]") {
-    return RegionType::Vvar;
+    return RegionType::VVAR;
   }
   if (pathname == "[vsyscall]") {
-    return RegionType::Vsyscall;
+    return RegionType::VSYSCALL;
   }
 
-  // Named file mapping
   if (!pathname.empty() && pathname[0] == '/') {
-    // Check if it's a shared library
     if (pathname.find(".so") != std::string::npos) {
-      return RegionType::SharedLib;
+      return RegionType::SHARED_LIB;
     }
-    // Check if it's executable code (r-x permissions on a file)
+
     if (permissions.size() >= 3 && permissions[2] == 'x') {
-      return RegionType::Code;
+      return RegionType::CODE;
     }
-    return RegionType::MappedFile;
+    return RegionType::MAPPED_FILE;
   }
 
-  // Anonymous mapping (no pathname, or empty after inode)
   if (pathname.empty()) {
-    // Executable anonymous mapping = likely JIT code
     if (permissions.size() >= 3 && permissions[2] == 'x') {
-      return RegionType::Code;
+      return RegionType::CODE;
     }
-    return RegionType::Anonymous;
+    return RegionType::ANONYMOUS;
   }
 
-  return RegionType::Unknown;
+  return RegionType::UNKNOWN;
 }
 
 } // namespace memc

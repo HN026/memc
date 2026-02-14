@@ -15,6 +15,8 @@ add_library(memc_lib STATIC
     src/smaps_parser.cpp
     src/sampler.cpp
     src/collector.cpp
+    src/cli.cpp
+    src/process_utils.cpp
 )
 
 target_include_directories(memc_lib
