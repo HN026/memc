@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <fstream>
 #include <memc/process_utils.h>
+#include <memory>
 #include <string>
 
 namespace memc {
@@ -18,12 +19,12 @@ namespace memc {
  */
 std::vector<pid_t> enumerate_pids() {
     std::vector<pid_t> pids;
-    DIR* dir = opendir("/proc");
+    auto dir = std::unique_ptr<DIR, int (*)(DIR*)>(opendir("/proc"), closedir);
     if (!dir)
         return pids;
 
     struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
+    while ((entry = readdir(dir.get())) != nullptr) {
         const char* name = entry->d_name;
         bool is_pid = true;
         for (const char* p = name; *p; ++p) {
@@ -36,7 +37,6 @@ std::vector<pid_t> enumerate_pids() {
             pids.push_back(static_cast<pid_t>(std::atoi(name)));
         }
     }
-    closedir(dir);
 
     std::sort(pids.begin(), pids.end());
     return pids;
