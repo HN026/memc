@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <cstdio>
 #include <fstream>
 #include <memc/maps_parser.h>
@@ -64,63 +65,43 @@ std::vector<MemoryRegion> MapsParser::parse_from_string(const std::string& conte
  * if fewer than 6 fields could be read.
  */
 std::optional<MemoryRegion> MapsParser::parse_line(const std::string& line) {
-
     MemoryRegion region;
-
-    uint64_t start = 0, end = 0;
-    char perms[8] = {};
+    std::istringstream lineStream(line);
+    std::string addr_range;
+    std::string permissions;
     uint64_t offset = 0;
-    char dev[16] = {};
-    uint64_t inode = 0;
+    std::string device;
+    uint64_t inode;
 
-    int fields_read = std::sscanf(line.c_str(), "%lx-%lx %4s %lx %15s %lu", &start, &end, perms,
-                                  &offset, dev, &inode);
-
-    if (fields_read < 6) {
+    if (!(lineStream >> addr_range >> permissions >> std::hex >> offset >> device >> inode)) {
+        return std::nullopt;
+    }
+    char dash = addr_range.find('-');
+    if (dash == std::string::npos) {
         return std::nullopt;
     }
 
-    region.start_addr = start;
-    region.end_addr = end;
-    region.permissions = perms;
+    region.start_addr = std::stoull(addr_range.substr(0, dash), nullptr, 16);
+    region.end_addr = std::stoull(addr_range.substr(dash + 1), nullptr, 16);
+    region.permissions = permissions;
     region.offset = offset;
-    region.device = dev;
+    region.device = device;
     region.inode = inode;
+    std::string rest;
+    std::getline(lineStream, rest);
 
-    const char* p = line.c_str();
-    int spaces = 0;
-    bool in_space = false;
-    while (*p) {
-        if (*p == ' ' || *p == '\t') {
-            if (!in_space) {
-                spaces++;
-                in_space = true;
-            }
-        } else {
-            in_space = false;
-        }
-        if (spaces >= 5 && !in_space) {
-            break;
-        }
-        p++;
-    }
-
-    if (*p) {
-        while (*p == ' ' || *p == '\t')
-            p++;
-        if (*p) {
-            region.pathname = p;
+    if (!rest.empty()) {
+        size_t pos = rest.find_first_not_of(" \t");
+        if (pos != std::string::npos) {
+            region.pathname = rest.substr(pos);
             while (!region.pathname.empty() &&
-                   (region.pathname.back() == ' ' || region.pathname.back() == '\t' ||
-                    region.pathname.back() == '\n' || region.pathname.back() == '\r')) {
+                   std::isspace(static_cast<unsigned char>(region.pathname.back()))) {
                 region.pathname.pop_back();
             }
         }
     }
 
     region.type = classify_region(region.pathname, region.permissions);
-    region.size_kb = (end - start) / 1024;
-
     return region;
 }
 
