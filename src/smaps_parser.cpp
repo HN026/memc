@@ -45,7 +45,7 @@ std::vector<MemoryRegion> SmapsParser::parse_from_string(const std::string& cont
     std::istringstream stream(content);
     std::string line;
 
-    MemoryRegion* current_region = nullptr;
+    std::optional<size_t> current_idx;
 
     while (std::getline(stream, line)) {
         if (line.empty())
@@ -55,11 +55,11 @@ std::vector<MemoryRegion> SmapsParser::parse_from_string(const std::string& cont
             auto parsed = MapsParser::parse_from_string(line + "\n");
             if (!parsed.empty()) {
                 regions.push_back(std::move(parsed[0]));
-                current_region = &regions.back();
-                current_region->has_smaps_data = true;
+                current_idx = regions.size() - 1;
+                regions[*current_idx].has_smaps_data = true;
             }
-        } else if (current_region) {
-            apply_detail_line(line, *current_region);
+        } else if (current_idx) {
+            apply_detail_line(line, regions[*current_idx]);
         }
     }
 
@@ -83,15 +83,15 @@ bool SmapsParser::enrich(pid_t pid, std::vector<MemoryRegion>& regions) {
         return false;
     }
 
-    std::unordered_map<uint64_t, const MemoryRegion*> smaps_lookup;
-    for (const auto& sr : *smaps_result) {
-        smaps_lookup[sr.start_addr] = &sr;
+    std::unordered_map<uint64_t, size_t> smaps_lookup;
+    for (size_t i = 0; i < smaps_result->size(); ++i) {
+        smaps_lookup[(*smaps_result)[i].start_addr] = i;
     }
 
     for (auto& region : regions) {
         auto it = smaps_lookup.find(region.start_addr);
         if (it != smaps_lookup.end()) {
-            const auto& sr = *it->second;
+            const auto& sr = (*smaps_result)[it->second];
             region.rss_kb = sr.rss_kb;
             region.pss_kb = sr.pss_kb;
             region.shared_clean_kb = sr.shared_clean_kb;
