@@ -102,6 +102,7 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string& line) {
     }
 
     region.type = classify_region(region.pathname, region.permissions);
+    region.size_kb = (region.end_addr - region.end_addr) / 1024;
     return region;
 }
 
