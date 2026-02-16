@@ -1,6 +1,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <memc/constants.h>
 #include <memc/maps_parser.h>
 #include <memc/smaps_parser.h>
 #include <sstream>
@@ -20,7 +21,7 @@ namespace memc {
  * MemoryRegion objects, or std::nullopt if the file could not be opened.
  */
 std::optional<std::vector<MemoryRegion>> SmapsParser::parse(pid_t pid) {
-    std::string path = "/proc/" + std::to_string(pid) + "/smaps";
+    std::string path = proc_path(pid, constants::PROC_SMAPS_SUFFIX);
     std::ifstream ifs(path);
     if (!ifs.is_open()) {
         return std::nullopt;
@@ -126,21 +127,21 @@ void SmapsParser::apply_detail_line(const std::string& line, MemoryRegion& regio
     uint64_t value = 0;
     std::sscanf(value_part.c_str(), " %lu", &value);
 
-    if (key == "Size") {
+    if (key == constants::SMAPS_KEY_SIZE) {
         region.size_kb = value;
-    } else if (key == "Rss") {
+    } else if (key == constants::SMAPS_KEY_RSS) {
         region.rss_kb = value;
-    } else if (key == "Pss") {
+    } else if (key == constants::SMAPS_KEY_PSS) {
         region.pss_kb = value;
-    } else if (key == "Shared_Clean") {
+    } else if (key == constants::SMAPS_KEY_SHARED_CLEAN) {
         region.shared_clean_kb = value;
-    } else if (key == "Shared_Dirty") {
+    } else if (key == constants::SMAPS_KEY_SHARED_DIRTY) {
         region.shared_dirty_kb = value;
-    } else if (key == "Private_Clean") {
+    } else if (key == constants::SMAPS_KEY_PRIVATE_CLEAN) {
         region.private_clean_kb = value;
-    } else if (key == "Private_Dirty") {
+    } else if (key == constants::SMAPS_KEY_PRIVATE_DIRTY) {
         region.private_dirty_kb = value;
-    } else if (key == "Swap") {
+    } else if (key == constants::SMAPS_KEY_SWAP) {
         region.swap_kb = value;
     }
 }

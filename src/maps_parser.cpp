@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <fstream>
+#include <memc/constants.h>
 #include <memc/maps_parser.h>
 #include <sstream>
 #include <string>
@@ -18,7 +19,7 @@ namespace memc {
  * objects, or std::nullopt if the file could not be opened.
  */
 std::optional<std::vector<MemoryRegion>> MapsParser::parse(pid_t pid) {
-    std::string path = "/proc/" + std::to_string(pid) + "/maps";
+    std::string path = proc_path(pid, constants::PROC_MAPS_SUFFIX);
     std::ifstream ifs(path);
     if (!ifs.is_open()) {
         return std::nullopt;
@@ -102,7 +103,7 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string& line) {
     }
 
     region.type = classify_region(region.pathname, region.permissions);
-    region.size_kb = (region.end_addr - region.start_addr) / 1024;
+    region.size_kb = (region.end_addr - region.start_addr) / constants::BYTES_PER_KB;
     return region;
 }
 
@@ -118,35 +119,37 @@ std::optional<MemoryRegion> MapsParser::parse_line(const std::string& line) {
  */
 RegionType MapsParser::classify_region(const std::string& pathname,
                                        const std::string& permissions) {
-    if (pathname == "[heap]") {
+    if (pathname == constants::REGION_HEAP) {
         return RegionType::HEAP;
     }
-    if (pathname.find("[stack") != std::string::npos) {
+    if (pathname.find(constants::REGION_STACK_PREFIX) != std::string::npos) {
         return RegionType::STACK;
     }
-    if (pathname == "[vdso]") {
+    if (pathname == constants::REGION_VDSO) {
         return RegionType::VDSO;
     }
-    if (pathname == "[vvar]") {
+    if (pathname == constants::REGION_VVAR) {
         return RegionType::VVAR;
     }
-    if (pathname == "[vsyscall]") {
+    if (pathname == constants::REGION_VSYSCALL) {
         return RegionType::VSYSCALL;
     }
 
     if (!pathname.empty() && pathname[0] == '/') {
-        if (pathname.find(".so") != std::string::npos) {
+        if (pathname.find(constants::SHARED_LIB_EXTENSION) != std::string::npos) {
             return RegionType::SHARED_LIB;
         }
 
-        if (permissions.size() >= 3 && permissions[2] == 'x') {
+        if (permissions.size() >= constants::PERM_MIN_LENGTH &&
+            permissions[constants::PERM_EXECUTE_INDEX] == constants::PERM_EXECUTE_CHAR) {
             return RegionType::CODE;
         }
         return RegionType::MAPPED_FILE;
     }
 
     if (pathname.empty()) {
-        if (permissions.size() >= 3 && permissions[2] == 'x') {
+        if (permissions.size() >= constants::PERM_MIN_LENGTH &&
+            permissions[constants::PERM_EXECUTE_INDEX] == constants::PERM_EXECUTE_CHAR) {
             return RegionType::CODE;
         }
         return RegionType::ANONYMOUS;
