@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memc/cli.h>
 #include <memc/collector.h>
+#include <memc/constants.h>
 #include <memc/process_utils.h>
 #include <memc/version.h>
 #include <thread>
@@ -116,7 +117,9 @@ static int run_all_mode(const memc::CLIOptions& opts) {
     std::cerr << "Collected " << collected << " process snapshots (" << skipped
               << " skipped due to permissions).\n";
 
-    std::string json_str = opts.collector_config.pretty_json ? result.dump(2) : result.dump();
+    std::string json_str = opts.collector_config.pretty_json
+                               ? result.dump(memc::constants::JSON_INDENT)
+                               : result.dump();
     write_output(json_str, opts.output_file);
 
     return 0;
@@ -137,7 +140,8 @@ static int run_single_pid(const memc::CLIOptions& opts) {
     if (opts.count == 1) {
         auto snapshot = collector.collect_once();
         if (!snapshot) {
-            std::cerr << "Error: failed to read /proc/" << opts.pid << "/maps\n"
+            std::cerr << "Error: failed to read "
+                      << memc::proc_path(opts.pid, memc::constants::PROC_MAPS_SUFFIX) << "\n"
                       << "Check that the process exists and you have permission.\n";
             return 1;
         }
@@ -168,7 +172,8 @@ static int run_single_pid(const memc::CLIOptions& opts) {
             auto deadline = std::chrono::steady_clock::now() +
                             std::chrono::milliseconds(opts.collector_config.interval_ms);
             while (g_running.load() && std::chrono::steady_clock::now() < deadline) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(memc::constants::POLL_SLEEP_MS));
             }
         }
 

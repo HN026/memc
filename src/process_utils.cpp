@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <dirent.h>
 #include <fstream>
+#include <memc/constants.h>
 #include <memc/process_utils.h>
 #include <memory>
 #include <string>
@@ -19,7 +20,8 @@ namespace memc {
  */
 std::vector<pid_t> enumerate_pids() {
     std::vector<pid_t> pids;
-    auto dir = std::unique_ptr<DIR, int (*)(DIR*)>(opendir("/proc"), closedir);
+    auto dir = std::unique_ptr<DIR, int (*)(DIR*)>(
+        opendir(std::string(constants::PROC_ROOT).c_str()), closedir);
     if (!dir)
         return pids;
 
@@ -49,7 +51,7 @@ std::vector<pid_t> enumerate_pids() {
  * @return std::string The process name, or "unknown" if not found.
  */
 std::string get_process_name(pid_t pid) {
-    std::string path = "/proc/" + std::to_string(pid) + "/comm";
+    std::string path = proc_path(pid, constants::PROC_COMM_SUFFIX);
     std::ifstream ifs(path);
     std::string name;
     if (ifs.is_open() && std::getline(ifs, name)) {
@@ -58,7 +60,7 @@ std::string get_process_name(pid_t pid) {
         }
         return name;
     }
-    return "unknown";
+    return std::string(constants::UNKNOWN_PROCESS_NAME);
 }
 
 } // namespace memc

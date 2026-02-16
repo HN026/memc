@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memc/collector.h>
+#include <memc/constants.h>
 #include <memc/maps_parser.h>
 #include <memc/smaps_parser.h>
 
@@ -66,7 +67,7 @@ std::string DataCollector::to_json(const ProcessSnapshot& snapshot) const {
     nlohmann::ordered_json j;
     memc::to_json(j, snapshot);
     if (config_.pretty_json) {
-        return j.dump(2);
+        return j.dump(constants::JSON_INDENT);
     }
     return j.dump();
 }

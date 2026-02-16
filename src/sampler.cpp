@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+#include <memc/constants.h>
 #include <memc/maps_parser.h>
 #include <memc/sampler.h>
 #include <memc/smaps_parser.h>
@@ -130,14 +131,15 @@ void Sampler::sample_loop() {
                 try {
                     cb(snapshot);
                 } catch (const std::exception& e) {
-                    std::cerr << "[memc] Snapshot callback threw: " << e.what() << std::endl;
+                    std::cerr << constants::LOG_PREFIX << " Snapshot callback threw: " << e.what()
+                              << std::endl;
                 }
             }
         }
 
         auto deadline = std::chrono::steady_clock::now() + config_.interval;
         while (running_.load() && std::chrono::steady_clock::now() < deadline) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(constants::POLL_SLEEP_MS));
         }
     }
 }
